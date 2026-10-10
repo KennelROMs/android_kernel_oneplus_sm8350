@@ -372,6 +372,7 @@ int oplus_usb_get_property(struct power_supply *psy,
 
 	if (chip->charger_exist) {
 		if ((chip->charger_type == POWER_SUPPLY_TYPE_USB
+				|| chip->charger_type == POWER_SUPPLY_TYPE_USB_PD_SDP
 				|| chip->charger_type == POWER_SUPPLY_TYPE_USB_CDP)
 				&& chip->stop_chg == 1) {
 			chip->usb_online = true;
@@ -380,6 +381,7 @@ int oplus_usb_get_property(struct power_supply *psy,
 			else
 				chip->usb_psd.type = POWER_SUPPLY_TYPE_USB;
 		} else if (!(chip->charger_type == POWER_SUPPLY_TYPE_USB
+				|| chip->charger_type == POWER_SUPPLY_TYPE_USB_PD_SDP
 				|| chip->charger_type == POWER_SUPPLY_TYPE_USB_CDP)) {
 			chip->usb_online = false;
 		}
@@ -410,7 +412,8 @@ static void usb_update(struct oplus_chg_chip *chip)
 {
 	if (chip->charger_exist) {
 		/*if (chip->charger_type==STANDARD_HOST || chip->charger_type==CHARGING_HOST) {*/
-		if (chip->charger_type == POWER_SUPPLY_TYPE_USB) {
+		if (chip->charger_type == POWER_SUPPLY_TYPE_USB
+				|| chip->charger_type == POWER_SUPPLY_TYPE_USB_PD_SDP) {
 			chip->usb_online = true;
 			chip->usb_psd.type = POWER_SUPPLY_TYPE_USB;
 		} else if(chip->charger_type == POWER_SUPPLY_TYPE_USB_CDP) {
@@ -5291,6 +5294,9 @@ void oplus_chg_set_input_current_limit(struct oplus_chg_chip *chip)
 			break;
 		case POWER_SUPPLY_TYPE_USB_CDP:
 			current_limit = chip->limits.input_current_cdp_ma;
+			break;
+		case POWER_SUPPLY_TYPE_USB_PD_SDP:
+			current_limit = chip->limits.input_current_charger_ma;
 			break;
 		default:
 			return;

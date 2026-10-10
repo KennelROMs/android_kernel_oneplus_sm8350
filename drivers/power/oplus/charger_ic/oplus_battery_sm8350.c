@@ -1802,6 +1802,7 @@ static void battery_chg_update_usb_type_work(struct work_struct *work)
 
 	switch (pst->prop[USB_ADAP_TYPE]) {
 	case POWER_SUPPLY_USB_TYPE_SDP:
+	case POWER_SUPPLY_USB_TYPE_PD_SDP:
 		usb_psy_desc.type = POWER_SUPPLY_TYPE_USB;
 		break;
 	case POWER_SUPPLY_USB_TYPE_DCP:
@@ -2459,6 +2460,9 @@ static int usb_psy_get_prop(struct power_supply *psy,
 	pval->intval = pst->prop[prop_id];
 	if (prop == POWER_SUPPLY_PROP_TEMP)
 		pval->intval = DIV_ROUND_CLOSEST((int)pval->intval, 10);
+	/* The sysfs core rejects unknown USB types, which fails the whole uevent. */
+	if (prop == POWER_SUPPLY_PROP_USB_TYPE && pval->intval == POWER_SUPPLY_USB_TYPE_PD_SDP)
+		pval->intval = POWER_SUPPLY_USB_TYPE_SDP;
 
 #ifdef OPLUS_FEATURE_CHG_BASIC
 	if (prop_id == USB_ONLINE) {
@@ -6699,6 +6703,10 @@ int opchg_get_charger_type(void)
 			break;
 		case POWER_SUPPLY_USB_TYPE_DCP:
 			charger_type = POWER_SUPPLY_TYPE_USB_DCP;
+			break;
+		/* A PD host carries USB data: not a DCP, so no VOOC/QC detection on D+/D-. */
+		case POWER_SUPPLY_USB_TYPE_PD_SDP:
+			charger_type = POWER_SUPPLY_TYPE_USB_PD_SDP;
 			break;
 		default:
 			charger_type = POWER_SUPPLY_TYPE_USB_DCP;

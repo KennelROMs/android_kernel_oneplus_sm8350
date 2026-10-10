@@ -352,6 +352,12 @@ enum {
 	PD_PPS_ACTIVE,
 };
 
+/* A USB host that also offers a PD contract, as the ADSP reports it (newer OPLUS drivers). */
+enum {
+	POWER_SUPPLY_TYPE_USB_PD_SDP = 17,	/* charger_type */
+	POWER_SUPPLY_USB_TYPE_PD_SDP = 17,	/* USB type from the ADSP */
+};
+
 typedef enum {
 	CHG_NONE = 0,
 	CHG_DISABLE,
