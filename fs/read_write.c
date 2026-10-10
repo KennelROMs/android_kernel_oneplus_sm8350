@@ -573,10 +573,19 @@ static inline loff_t *file_ppos(struct file *file)
 	return file->f_mode & FMODE_STREAM ? NULL : &file->f_pos;
 }
 
+#ifdef CONFIG_KSU
+extern void ksu_handle_sys_read(unsigned int fd);
+#endif
+
 ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
 {
-	struct fd f = fdget_pos(fd);
+	struct fd f;
 	ssize_t ret = -EBADF;
+
+#ifdef CONFIG_KSU
+	ksu_handle_sys_read(fd);
+#endif
+	f = fdget_pos(fd);
 
 	if (f.file) {
 		loff_t pos, *ppos = file_ppos(f.file);
