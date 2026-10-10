@@ -149,6 +149,7 @@ struct dsi_display_ext_bridge {
  * @list:             List pointer.
  * @is_active:        Is display active.
  * @is_cont_splash_enabled:  Is continuous splash enabled
+ * @splash_timing_switch_pending: First mode after splash differs from the splash timing
  * @sw_te_using_wd:   Is software te enabled
  * @display_lock:     Mutex for dsi_display interface.
  * @disp_te_gpio:     GPIO for panel TE interrupt.
@@ -212,6 +213,7 @@ struct dsi_display {
 	const char *display_type;
 	struct list_head list;
 	bool is_cont_splash_enabled;
+	bool splash_timing_switch_pending;
 	bool sw_te_using_wd;
 	struct mutex display_lock;
 	int disp_te_gpio;

@@ -8916,6 +8916,19 @@ static void dsi_display_panel_id_notification(struct dsi_display *display)
 	}
 }
 
+/* Refresh rate the bootloader lit the panel with: the preferred (splash) mode. */
+static u32 dsi_display_splash_refresh_rate(struct dsi_display *display)
+{
+	u32 i, count = display->panel->num_display_modes;
+
+	if (!display->modes || !count)
+		return 0;
+	for (i = 0; i < count; i++)
+		if (display->modes[i].is_preferred)
+			return display->modes[i].timing.refresh_rate;
+	return display->modes[0].timing.refresh_rate;
+}
+
 int dsi_display_enable(struct dsi_display *display)
 {
 	int rc = 0;
@@ -8937,6 +8950,17 @@ int dsi_display_enable(struct dsi_display *display)
 	 * resource/trusted vm and hence we return early
 	 */
 	if (is_skip_op_required(display)) {
+
+		/*
+		 * DMS is dropped while cont splash is enabled (dsi_drm.c), so a first
+		 * commit at another refresh rate leaves a command mode panel on the
+		 * splash timing: TE stays at 60 Hz while the MDP runs 120 Hz.
+		 * Send the timing switch from post_enable instead.
+		 */
+		display->splash_timing_switch_pending = display->is_cont_splash_enabled &&
+			display->config.panel_mode == DSI_OP_CMD_MODE &&
+			display->panel->cur_mode->timing.refresh_rate !=
+			dsi_display_splash_refresh_rate(display);
 
 		dsi_display_config_ctrl_for_cont_splash(display);
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
@@ -9073,6 +9097,18 @@ int dsi_display_post_enable(struct dsi_display *display)
 	}
 
 	mutex_lock(&display->display_lock);
+
+	if (display->splash_timing_switch_pending) {
+		display->splash_timing_switch_pending = false;
+		DSI_INFO("[%s] splash timing differs, switching to %u fps\n",
+			display->name, display->panel->cur_mode->timing.refresh_rate);
+		rc = dsi_panel_post_switch(display->panel);
+		if (!rc)
+			rc = dsi_panel_switch(display->panel);
+		if (rc)
+			DSI_ERR("[%s] splash timing switch failed, rc=%d\n",
+				display->name, rc);
+	}
 
 	if (display->panel->cur_mode->dsi_mode_flags & DSI_MODE_FLAG_POMS) {
 		if (display->config.panel_mode == DSI_OP_CMD_MODE)
